@@ -1,2 +1,1 @@
-# Minimal packages needed for building Python wheels if required
 build-essential
