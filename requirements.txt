@@ -1,7 +1,6 @@
 streamlit
 tensorflow==2.20.0
-numpy==1.26.4
+numpy==1.25.2
 opencv-python-headless==4.11.0.86
 pandas
 matplotlib
-mediapipe==0.10.20
