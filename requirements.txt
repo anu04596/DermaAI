@@ -1,7 +1,19 @@
+# Streamlit UI
 streamlit==1.52.1
+
+# TensorFlow (compatible with Python 3.10)
 tensorflow==2.20.0
+
+# Numerical and data libraries
 numpy>=1.26.0
-opencv-python-headless==4.11.0.86
 pandas==2.3.3
+
+# Image processing
+opencv-python-headless==4.11.0.86
+Pillow
+
+# Plotting
 matplotlib==3.10.8
+
+# Rich logging (optional)
 rich>=10.14.0
