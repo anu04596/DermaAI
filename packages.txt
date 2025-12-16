@@ -1,7 +1,2 @@
-# Python 3.10 support
-python3.10-venv
-python3.10-dev
-python3.10-distutils
-
-# Build tools for compiling some Python packages
+# Minimal packages needed for building Python wheels if required
 build-essential
