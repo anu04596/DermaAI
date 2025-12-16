@@ -1,2 +1,7 @@
-sudo apt-get update
-sudo apt-get install -y python3.10-venv python3.10-dev python3.10-distutils build-essential
+# Python 3.10 support
+python3.10-venv
+python3.10-dev
+python3.10-distutils
+
+# Build tools for compiling some Python packages
+build-essential
