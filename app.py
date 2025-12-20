@@ -60,7 +60,7 @@ hr {
 # ----------------------------
 # MODEL & CLASS SETUP (UNCHANGED)
 # ----------------------------
-MODEL_PATH = "derma_model_tf215.keras"
+MODEL_PATH = "derma_model_.keras"
 model = load_model(MODEL_PATH)
 
 class_dict = {
