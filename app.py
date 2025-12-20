@@ -13,7 +13,7 @@ import datetime
 # PAGE CONFIG
 # ----------------------------
 st.set_page_config(
-    page_title="DermaScan - Facial Skin Detection",
+    page_title="DermaAI",
     page_icon="🧬",
     layout="centered"
 )
@@ -60,7 +60,7 @@ hr {
 # ----------------------------
 # MODEL & CLASS SETUP (UNCHANGED)
 # ----------------------------
-MODEL_PATH = "derma_model_.keras"
+MODEL_PATH = "derma_model.h5"
 model = load_model(MODEL_PATH)
 
 class_dict = {
@@ -245,6 +245,7 @@ DermaAI Automated Skin Analysis Report
 -------------------------------------
 Date: {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}
 Images Processed: {len(images)}
+Predicted: {major_label}
 
 Disclaimer:
 This report is AI-generated and intended for informational purposes only.
