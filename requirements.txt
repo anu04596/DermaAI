@@ -1,17 +1,8 @@
 streamlit==1.52.1
-
-# TensorFlow LTS (stable on Streamlit)
-tensorflow==2.15.1
-keras==2.15.0
-numpy==1.26.4
-
-# Data & plotting
-pandas==2.2.3
-matplotlib==3.8.4
-
-# Image processing
+tensorflow==2.20.0 
+numpy>=1.26.0
+pandas==2.3.3 
 opencv-python-headless==4.11.0.86
-Pillow==10.4.0
-
-# UI logging
-rich==14.2.0
+Pillow
+matplotlib==3.10.8 
+rich>=10.14.0
