@@ -45,7 +45,7 @@ hr { border:1px solid #374151 }
 # LOAD MODEL
 # ----------------------------
 MODEL_PATH = "derma_model.h5"
-model = load_model(MODEL_PATH)
+model = load_model(MODEL_PATH, compile=False)
 
 # ----------------------------
 # FACE DETECTORS (SAFE)
