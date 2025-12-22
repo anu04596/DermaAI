@@ -3,6 +3,7 @@ import streamlit as st
 import cv2
 import numpy as np
 import os
+import mediapipe as mp
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.efficientnet import preprocess_input
 import pandas as pd
@@ -77,34 +78,61 @@ condition_info = {
     "wrinkles": "Fine lines caused by aging and reduced skin elasticity."
 }
 
-haar = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
+# ----------------------------
+# MEDIAPIPE FACE DETECTOR
+# ----------------------------
+mp_face_detection = mp.solutions.face_detection
+
+def detect_faces(image, min_conf=0.7):
+    h, w, _ = image.shape
+    boxes = []
+
+    with mp_face_detection.FaceDetection(
+        model_selection=1,
+        min_detection_confidence=min_conf
+    ) as detector:
+
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = detector.process(rgb)
+
+        if not results.detections:
+            return boxes
+
+        for det in results.detections:
+            box = det.location_data.relative_bounding_box
+
+            x = int(box.xmin * w)
+            y = int(box.ymin * h)
+            bw = int(box.width * w)
+            bh = int(box.height * h)
+
+            x, y = max(0, x), max(0, y)
+
+            # Reject tiny / false detections (arms, walls)
+            if bw < 80 or bh < 80:
+                continue
+
+            boxes.append((x, y, bw, bh))
+
+    return boxes
 
 # ----------------------------
-# HELPER FUNCTIONS (UNCHANGED LOGIC)
+# HELPER FUNCTIONS (UNCHANGED)
 # ----------------------------
 def predict_skin(face_img):
     img = cv2.resize(face_img, (224,224))
     img = preprocess_input(img)
     img = np.expand_dims(img, axis=0)
-    preds = model.predict(img)[0]
+    preds = model.predict(img, verbose=0)[0]
     cls = np.argmax(preds)
     conf = preds[cls] * 100
     return class_dict[cls], float(conf), preds
-
-def detect_faces(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = haar.detectMultiScale(gray, 1.05, 4, minSize=(24,24))
-    return faces
 
 # ----------------------------
 # HEADER
 # ----------------------------
 st.title("🧬 DermaAI – Skin Analysis Platform")
-st.markdown(
-    "AI-powered facial skin condition assessment with confidence insights."
-)
+st.markdown("AI-powered facial skin condition assessment with confidence insights.")
 st.warning("⚠️ For educational and research purposes only. Not a medical diagnosis.")
 
 # ----------------------------
@@ -154,6 +182,10 @@ if images:
         orig = img.copy()
         faces = detect_faces(img)
 
+        if not faces:
+            st.warning(f"⚠️ No valid face detected in {name}")
+            continue
+
         for (x,y,w,h) in faces:
             face_crop = orig[y:y+h, x:x+w]
             if face_crop.size == 0:
@@ -187,9 +219,14 @@ if images:
                 2
             )
 
-            csv_records.append([name, major_label, round(major_conf,2), severity])
+            csv_records.append([
+                name,
+                major_label,
+                round(major_conf,2),
+                severity,
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ])
 
-            # -------- UI CARD --------
             st.markdown(f"""
             <div class="pred-card">
                 <h3 class="major">🩺 Primary Detection</h3>
@@ -203,11 +240,8 @@ if images:
             </div>
             """, unsafe_allow_html=True)
 
-            # -------- CONFIDENCE BARS (FIXED) --------
             st.subheader("Confidence Breakdown")
-            st.markdown(f"**{major_label} (Primary)**")
             st.progress(float(major_conf) / 100)
-
             for lbl, cnf in minor_preds:
                 st.markdown(lbl)
                 st.progress(float(cnf) / 100)
@@ -222,17 +256,17 @@ if images:
         )
 
     # ----------------------------
-    # SUMMARY & DOWNLOADS
+    # LOGS + DOWNLOADS
     # ----------------------------
     df = pd.DataFrame(
         csv_records,
-        columns=["image","predicted_label","confidence","severity"]
+        columns=["image","predicted_label","confidence","severity","timestamp"]
     )
 
-    st.subheader("📊 Prediction Summary")
-    st.bar_chart(df["predicted_label"].value_counts())
+    st.subheader("📊 Prediction Logs")
+    st.dataframe(df, use_container_width=True)
 
-    csv_path = "predictions.csv"
+    csv_path = "prediction_logs.csv"
     df.to_csv(csv_path, index=False)
 
     zip_path = "annotated_images.zip"
@@ -240,17 +274,5 @@ if images:
         for f in os.listdir(annotated_folder):
             zipf.write(os.path.join(annotated_folder, f), arcname=f)
 
-    report = f"""
-DermaAI Automated Skin Analysis Report
--------------------------------------
-Date: {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}
-Images Processed: {len(images)}
-Predicted: {major_label}
-
-Disclaimer:
-This report is AI-generated and intended for informational purposes only.
-"""
-
-    st.download_button("📄 Download CSV", open(csv_path,"rb"), "predictions.csv")
+    st.download_button("📄 Download Prediction Logs", open(csv_path,"rb"), "prediction_logs.csv")
     st.download_button("🖼 Download Annotated Images", open(zip_path,"rb"), "annotated_images.zip")
-    st.download_button("📝 Download Report", report, "DermaAI_Report.txt")
