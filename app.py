@@ -3,7 +3,6 @@ import streamlit as st
 import cv2
 import numpy as np
 import os
-import mediapipe as mp
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.efficientnet import preprocess_input
 import pandas as pd
@@ -79,40 +78,45 @@ condition_info = {
 }
 
 # ----------------------------
-# MEDIAPIPE FACE DETECTOR
+# DNN FACE DETECTOR (Caffe)
 # ----------------------------
-mp_face_detection = mp.solutions.face_detection
+DNN_PROTO = "deploy.prototxt"
+DNN_MODEL = "res10_300x300_ssd_iter_140000.caffemodel"
 
-def detect_faces(image, min_conf=0.7):
-    h, w, _ = image.shape
+net = cv2.dnn.readNetFromCaffe(DNN_PROTO, DNN_MODEL)
+
+def detect_faces(image, conf_threshold=0.6):
+    h, w = image.shape[:2]
     boxes = []
 
-    with mp_face_detection.FaceDetection(
-        model_selection=1,
-        min_detection_confidence=min_conf
-    ) as detector:
+    blob = cv2.dnn.blobFromImage(
+        cv2.resize(image, (300, 300)),
+        1.0,
+        (300, 300),
+        (104.0, 177.0, 123.0)
+    )
 
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = detector.process(rgb)
+    net.setInput(blob)
+    detections = net.forward()
 
-        if not results.detections:
-            return boxes
+    for i in range(detections.shape[2]):
+        confidence = detections[0, 0, i, 2]
 
-        for det in results.detections:
-            box = det.location_data.relative_bounding_box
+        if confidence > conf_threshold:
+            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+            x1, y1, x2, y2 = box.astype("int")
 
-            x = int(box.xmin * w)
-            y = int(box.ymin * h)
-            bw = int(box.width * w)
-            bh = int(box.height * h)
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w, x2), min(h, y2)
 
-            x, y = max(0, x), max(0, y)
+            bw = x2 - x1
+            bh = y2 - y1
 
             # Reject tiny / false detections (arms, walls)
             if bw < 80 or bh < 80:
                 continue
 
-            boxes.append((x, y, bw, bh))
+            boxes.append((x1, y1, bw, bh))
 
     return boxes
 
