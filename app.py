@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import cv2
 import numpy as np
@@ -19,50 +18,60 @@ st.set_page_config(
 )
 
 # ----------------------------
-# DARK PROFESSIONAL UI
+# DARK UI
 # ----------------------------
 st.markdown("""
 <style>
-.stApp {
-    background-color: #0b0b0b;
-    color: #eaeaea;
-}
-h1, h2, h3, h4 {
-    color: #ffffff;
-}
+.stApp { background:#0b0b0b; color:#eaeaea; }
+h1,h2,h3,h4 { color:#ffffff; }
 .stButton>button {
-    background: linear-gradient(90deg, #16a085, #1abc9c);
-    color: white;
-    border-radius: 10px;
-    font-weight: 600;
+    background:linear-gradient(90deg,#16a085,#1abc9c);
+    color:white;border-radius:10px;font-weight:600;
 }
 .pred-card {
-    background: linear-gradient(145deg, #111827, #1f2933);
-    padding: 18px;
-    border-radius: 16px;
-    border-left: 6px solid #22c55e;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-    margin-bottom: 18px;
+    background:#111827;
+    padding:18px;
+    border-radius:16px;
+    border-left:6px solid #22c55e;
+    margin-bottom:18px;
 }
-.major {
-    color: #22c55e;
-    font-weight: 700;
-}
-.minor {
-    color: #9ca3af;
-}
-hr {
-    border: 1px solid #374151;
-}
+.major { color:#22c55e;font-weight:700 }
+.minor { color:#9ca3af }
+hr { border:1px solid #374151 }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# MODEL & CLASS SETUP (UNCHANGED)
+# LOAD MODEL
 # ----------------------------
 MODEL_PATH = "derma_model.h5"
 model = load_model(MODEL_PATH)
 
+# ----------------------------
+# FACE DETECTORS (SAFE)
+# ----------------------------
+# Built-in Haar (NO XML download needed)
+face_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+)
+
+if face_cascade.empty():
+    st.error("❌ Haar cascade failed to load")
+    st.stop()
+
+# DNN files (must exist)
+DNN_PROTO = "deploy.prototxt.txt"
+DNN_MODEL = "res10_300x300_ssd_iter_140000.caffemodel"
+
+if not os.path.exists(DNN_PROTO) or not os.path.exists(DNN_MODEL):
+    st.error("❌ Missing DNN files (deploy.prototxt / caffemodel)")
+    st.stop()
+
+net = cv2.dnn.readNetFromCaffe(DNN_PROTO, DNN_MODEL)
+
+# ----------------------------
+# CLASSES
+# ----------------------------
 class_dict = {
     0: "clear_skin",
     1: "dark_spots",
@@ -78,179 +87,165 @@ condition_info = {
 }
 
 # ----------------------------
-# DNN FACE DETECTOR (Caffe)
+# HAAR + DNN FACE DETECTION
 # ----------------------------
-DNN_PROTO = "deploy.prototxt.txt"
-DNN_MODEL = "res10_300x300_ssd_iter_140000.caffemodel"
-
-net = cv2.dnn.readNetFromCaffe(DNN_PROTO, DNN_MODEL)
-
-def detect_faces(image, conf_threshold=0.6):
+def detect_faces(image):
     h, w = image.shape[:2]
-    boxes = []
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    # Haar candidates
+    candidates = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=6,
+        minSize=(100, 100)
+    )
+
+    if len(candidates) == 0:
+        return []
+
+    # DNN validation
     blob = cv2.dnn.blobFromImage(
-        cv2.resize(image, (300, 300)),
-        1.0,
-        (300, 300),
-        (104.0, 177.0, 123.0)
+        image, 1.0, (300,300),
+        (104.0,177.0,123.0),
+        swapRB=False, crop=False
     )
 
     net.setInput(blob)
     detections = net.forward()
 
-    for i in range(detections.shape[2]):
-        confidence = detections[0, 0, i, 2]
+    verified = []
 
-        if confidence > conf_threshold:
-            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-            x1, y1, x2, y2 = box.astype("int")
+    for (x,y,bw,bh) in candidates:
+        cx, cy = x + bw//2, y + bh//2
 
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
-
-            bw = x2 - x1
-            bh = y2 - y1
-
-            # Reject tiny / false detections (arms, walls)
-            if bw < 80 or bh < 80:
+        for i in range(detections.shape[2]):
+            conf = detections[0,0,i,2]
+            if conf < 0.35:
                 continue
 
-            boxes.append((x1, y1, bw, bh))
+            box = detections[0,0,i,3:7] * np.array([w,h,w,h])
+            x1,y1,x2,y2 = box.astype(int)
 
-    return boxes
+            if x1 < cx < x2 and y1 < cy < y2:
+                verified.append((x,y,bw,bh,conf))
+                break
+
+    # Fallback to Haar if DNN fails
+    if not verified:
+        verified = [(x,y,bw,bh,0.0) for (x,y,bw,bh) in candidates]
+
+    return verified
 
 # ----------------------------
-# HELPER FUNCTIONS (UNCHANGED)
+# SELECT BEST FACE
 # ----------------------------
-def predict_skin(face_img):
-    img = cv2.resize(face_img, (224,224))
-    img = preprocess_input(img)
-    img = np.expand_dims(img, axis=0)
-    preds = model.predict(img, verbose=0)[0]
-    cls = np.argmax(preds)
-    conf = preds[cls] * 100
-    return class_dict[cls], float(conf), preds
+def select_best_face(faces, shape):
+    if not faces:
+        return None
+
+    h, w = shape[:2]
+    center = np.array([w//2, h//2])
+
+    best, best_score = None, -1
+    for (x,y,fw,fh,conf) in faces:
+        area = fw * fh
+        face_center = np.array([x+fw//2, y+fh//2])
+        dist = np.linalg.norm(face_center-center)
+        score = area - dist*2 + conf*500
+
+        if score > best_score:
+            best_score = score
+            best = (x,y,fw,fh)
+
+    return best
+
+# ----------------------------
+# SKIN PREDICTION
+# ----------------------------
+def predict_skin(face):
+    face = cv2.resize(face, (224,224))
+    face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+    face = preprocess_input(face)
+    face = np.expand_dims(face, 0)
+
+    preds = model.predict(face, verbose=0)[0]
+    idx = np.argmax(preds)
+    return class_dict[idx], preds[idx]*100, preds
 
 # ----------------------------
 # HEADER
 # ----------------------------
 st.title("🧬 DermaAI – Skin Analysis Platform")
-st.markdown("AI-powered facial skin condition assessment with confidence insights.")
-st.warning("⚠️ For educational and research purposes only. Not a medical diagnosis.")
+st.markdown("AI-powered facial skin condition assessment.")
+st.warning("⚠️ Educational use only. Not a medical diagnosis.")
 
 # ----------------------------
-# INPUT MODE
+# INPUT
 # ----------------------------
-mode = st.radio(
-    "Select Image Source",
-    ["Upload Image(s)", "Use Webcam"],
-    horizontal=True
-)
-
+mode = st.radio("Select Image Source", ["Upload Image(s)", "Use Webcam"], horizontal=True)
 images = []
 
 if mode == "Upload Image(s)":
-    uploaded_files = st.file_uploader(
-        "Upload one or multiple facial images",
+    files = st.file_uploader(
+        "Upload face images",
         type=["jpg","jpeg","png"],
         accept_multiple_files=True
     )
-    if uploaded_files:
-        for f in uploaded_files:
-            img = cv2.imdecode(
-                np.frombuffer(f.read(), np.uint8),
-                cv2.IMREAD_COLOR
-            )
+    if files:
+        for f in files:
+            img = cv2.imdecode(np.frombuffer(f.read(), np.uint8), cv2.IMREAD_COLOR)
             images.append((f.name, img))
-
 else:
     cam = st.camera_input("Capture image")
     if cam:
-        img = cv2.imdecode(
-            np.frombuffer(cam.getvalue(), np.uint8),
-            cv2.IMREAD_COLOR
-        )
+        img = cv2.imdecode(np.frombuffer(cam.getvalue(), np.uint8), cv2.IMREAD_COLOR)
         images.append(("webcam.jpg", img))
 
 # ----------------------------
-# PROCESS IMAGES
+# PROCESS
 # ----------------------------
 if images:
-    annotated_folder = "annotated_faces"
-    os.makedirs(annotated_folder, exist_ok=True)
-
-    csv_records = []
+    records = []
+    annotated_dir = "annotated_faces"
+    os.makedirs(annotated_dir, exist_ok=True)
 
     for name, img in images:
-        orig = img.copy()
         faces = detect_faces(img)
+        best = select_best_face(faces, img.shape)
 
-        if not faces:
-            st.warning(f"⚠️ No valid face detected in {name}")
+        if not best:
+            st.warning(f"⚠️ No face detected in {name}")
             continue
 
-        for (x,y,w,h) in faces:
-            face_crop = orig[y:y+h, x:x+w]
-            if face_crop.size == 0:
-                continue
+        x,y,w,h = best
+        face_crop = img[y:y+h, x:x+w]
 
-            label, conf, raw_preds = predict_skin(face_crop)
+        label, conf, raw = predict_skin(face_crop)
 
-            sorted_preds = sorted(
-                [(class_dict[i], raw_preds[i]*100) for i in range(len(raw_preds))],
-                key=lambda x: x[1],
-                reverse=True
-            )
+        cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+        cv2.putText(
+            img,f"{label} {conf:.1f}%",
+            (x,y-8),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,(0,255,0),2
+        )
 
-            major_label, major_conf = sorted_preds[0]
-            minor_preds = sorted_preds[1:3]
+        records.append([
+            name, label, round(conf,2),
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ])
 
-            severity = (
-                "Mild" if major_conf < 60 else
-                "Moderate" if major_conf < 85 else
-                "Severe"
-            )
+        st.markdown(f"""
+        <div class="pred-card">
+            <h3 class="major">🩺 Primary Detection</h3>
+            <h2 class="major">{label}</h2>
+            <p><b>Confidence:</b> {conf:.2f}%</p>
+            <p>{condition_info[label]}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-            cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
-            cv2.putText(
-                img,
-                f"{major_label} {major_conf:.1f}%",
-                (x,y-8),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (0,255,0),
-                2
-            )
-
-            csv_records.append([
-                name,
-                major_label,
-                round(major_conf,2),
-                severity,
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            ])
-
-            st.markdown(f"""
-            <div class="pred-card">
-                <h3 class="major">🩺 Primary Detection</h3>
-                <h2 class="major">{major_label}</h2>
-                <p><b>Confidence:</b> {major_conf:.2f}%</p>
-                <p><b>Severity:</b> {severity}</p>
-                <p>{condition_info[major_label]}</p>
-                <hr>
-                <h4>Secondary Indicators</h4>
-                {"".join([f"<p class='minor'>{lbl}: {cnf:.2f}%</p>" for lbl, cnf in minor_preds])}
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.subheader("Confidence Breakdown")
-            st.progress(float(major_conf) / 100)
-            for lbl, cnf in minor_preds:
-                st.markdown(lbl)
-                st.progress(float(cnf) / 100)
-
-        save_path = os.path.join(annotated_folder, name)
+        save_path = os.path.join(annotated_dir, name)
         cv2.imwrite(save_path, img)
 
         st.image(
@@ -260,11 +255,11 @@ if images:
         )
 
     # ----------------------------
-    # LOGS + DOWNLOADS
+    # LOGS & DOWNLOADS
     # ----------------------------
     df = pd.DataFrame(
-        csv_records,
-        columns=["image","predicted_label","confidence","severity","timestamp"]
+        records,
+        columns=["image","prediction","confidence","timestamp"]
     )
 
     st.subheader("📊 Prediction Logs")
@@ -275,8 +270,8 @@ if images:
 
     zip_path = "annotated_images.zip"
     with zipfile.ZipFile(zip_path, "w") as zipf:
-        for f in os.listdir(annotated_folder):
-            zipf.write(os.path.join(annotated_folder, f), arcname=f)
+        for f in os.listdir(annotated_dir):
+            zipf.write(os.path.join(annotated_dir, f), arcname=f)
 
-    st.download_button("📄 Download Prediction Logs", open(csv_path,"rb"), "prediction_logs.csv")
+    st.download_button("📄 Download Logs CSV", open(csv_path,"rb"), "prediction_logs.csv")
     st.download_button("🖼 Download Annotated Images", open(zip_path,"rb"), "annotated_images.zip")
