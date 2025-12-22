@@ -48,9 +48,8 @@ MODEL_PATH = "derma_model.h5"
 model = load_model(MODEL_PATH, compile=False)
 
 # ----------------------------
-# FACE DETECTORS (SAFE)
+# HAAR FACE DETECTOR
 # ----------------------------
-# Built-in Haar (NO XML download needed)
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
@@ -58,16 +57,6 @@ face_cascade = cv2.CascadeClassifier(
 if face_cascade.empty():
     st.error("❌ Haar cascade failed to load")
     st.stop()
-
-# DNN files (must exist)
-DNN_PROTO = "deploy.prototxt.txt"
-DNN_MODEL = "res10_300x300_ssd_iter_140000.caffemodel"
-
-if not os.path.exists(DNN_PROTO) or not os.path.exists(DNN_MODEL):
-    st.error("❌ Missing DNN files (deploy.prototxt / caffemodel)")
-    st.stop()
-
-net = cv2.dnn.readNetFromCaffe(DNN_PROTO, DNN_MODEL)
 
 # ----------------------------
 # CLASSES
@@ -87,77 +76,39 @@ condition_info = {
 }
 
 # ----------------------------
-# HAAR + DNN FACE DETECTION
+# HAAR FACE DETECTION
 # ----------------------------
 def detect_faces(image):
-    h, w = image.shape[:2]
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Haar candidates
-    candidates = face_cascade.detectMultiScale(
+    faces = face_cascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
         minNeighbors=6,
         minSize=(100, 100)
     )
-
-    if len(candidates) == 0:
-        return []
-
-    # DNN validation
-    blob = cv2.dnn.blobFromImage(
-        image, 1.0, (300,300),
-        (104.0,177.0,123.0),
-        swapRB=False, crop=False
-    )
-
-    net.setInput(blob)
-    detections = net.forward()
-
-    verified = []
-
-    for (x,y,bw,bh) in candidates:
-        cx, cy = x + bw//2, y + bh//2
-
-        for i in range(detections.shape[2]):
-            conf = detections[0,0,i,2]
-            if conf < 0.35:
-                continue
-
-            box = detections[0,0,i,3:7] * np.array([w,h,w,h])
-            x1,y1,x2,y2 = box.astype(int)
-
-            if x1 < cx < x2 and y1 < cy < y2:
-                verified.append((x,y,bw,bh,conf))
-                break
-
-    # Fallback to Haar if DNN fails
-    if not verified:
-        verified = [(x,y,bw,bh,0.0) for (x,y,bw,bh) in candidates]
-
-    return verified
+    return faces
 
 # ----------------------------
 # SELECT BEST FACE
 # ----------------------------
 def select_best_face(faces, shape):
-    if not faces:
+    if len(faces) == 0:
         return None
 
     h, w = shape[:2]
     center = np.array([w//2, h//2])
 
     best, best_score = None, -1
-    for (x,y,fw,fh,conf) in faces:
+    for (x, y, fw, fh) in faces:
         area = fw * fh
-        face_center = np.array([x+fw//2, y+fh//2])
-        dist = np.linalg.norm(face_center-center)
-        score = area - dist*2 + conf*500
-
+        face_center = np.array([x + fw//2, y + fh//2])
+        dist = np.linalg.norm(face_center - center)
+        ar = fw / fh
+        ar_score = 1 - abs(ar - 1)  # prefer square faces
+        score = area * 1.2 + ar_score * 200 - dist * 1.5
         if score > best_score:
             best_score = score
-            best = (x,y,fw,fh)
-
+            best = (x, y, fw, fh)
     return best
 
 # ----------------------------
@@ -168,7 +119,6 @@ def predict_skin(face):
     face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
     face = preprocess_input(face)
     face = np.expand_dims(face, 0)
-
     preds = model.predict(face, verbose=0)[0]
     idx = np.argmax(preds)
     return class_dict[idx], preds[idx]*100, preds
@@ -216,20 +166,22 @@ if images:
 
         if not best:
             st.warning(f"⚠️ No face detected in {name}")
-            continue
-
-        x,y,w,h = best
-        face_crop = img[y:y+h, x:x+w]
+            # fallback: use full image
+            face_crop = img.copy()
+        else:
+            x, y, w, h = best
+            face_crop = img[y:y+h, x:x+w]
+            cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
 
         label, conf, raw = predict_skin(face_crop)
 
-        cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-        cv2.putText(
-            img,f"{label} {conf:.1f}%",
-            (x,y-8),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,(0,255,0),2
-        )
+        if best:
+            cv2.putText(
+                img,f"{label} {conf:.1f}%",
+                (x,y-8),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,(0,255,0),2
+            )
 
         records.append([
             name, label, round(conf,2),
