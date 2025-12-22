@@ -80,7 +80,7 @@ condition_info = {
 # ----------------------------
 # DNN FACE DETECTOR (Caffe)
 # ----------------------------
-DNN_PROTO = "deploy.prototxt"
+DNN_PROTO = "deploy.prototxt.txt"
 DNN_MODEL = "res10_300x300_ssd_iter_140000.caffemodel"
 
 net = cv2.dnn.readNetFromCaffe(DNN_PROTO, DNN_MODEL)
