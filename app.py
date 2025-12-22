@@ -48,12 +48,11 @@ MODEL_PATH = "derma_model.h5"
 model = load_model(MODEL_PATH, compile=False)
 
 # ----------------------------
-# HAAR FACE DETECTOR
+# FACE DETECTOR (HAAR)
 # ----------------------------
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
-
 if face_cascade.empty():
     st.error("❌ Haar cascade failed to load")
     st.stop()
@@ -76,40 +75,21 @@ condition_info = {
 }
 
 # ----------------------------
-# HAAR FACE DETECTION
+# DYNAMIC HAAR FACE DETECTION
 # ----------------------------
 def detect_faces(image):
+    h, w = image.shape[:2]
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Dynamic minSize based on image dimensions
+    min_dim = max(30, int(min(h, w) * 0.1))  # at least 30px
     faces = face_cascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
         minNeighbors=6,
-        minSize=(100, 100)
+        minSize=(min_dim, min_dim)
     )
     return faces
-
-# ----------------------------
-# SELECT BEST FACE
-# ----------------------------
-def select_best_face(faces, shape):
-    if len(faces) == 0:
-        return None
-
-    h, w = shape[:2]
-    center = np.array([w//2, h//2])
-
-    best, best_score = None, -1
-    for (x, y, fw, fh) in faces:
-        area = fw * fh
-        face_center = np.array([x + fw//2, y + fh//2])
-        dist = np.linalg.norm(face_center - center)
-        ar = fw / fh
-        ar_score = 1 - abs(ar - 1)  # prefer square faces
-        score = area * 1.2 + ar_score * 200 - dist * 1.5
-        if score > best_score:
-            best_score = score
-            best = (x, y, fw, fh)
-    return best
 
 # ----------------------------
 # SKIN PREDICTION
@@ -131,7 +111,7 @@ st.markdown("AI-powered facial skin condition assessment.")
 st.warning("⚠️ Educational use only. Not a medical diagnosis.")
 
 # ----------------------------
-# INPUT
+# INPUT MODE
 # ----------------------------
 mode = st.radio("Select Image Source", ["Upload Image(s)", "Use Webcam"], horizontal=True)
 images = []
@@ -153,7 +133,7 @@ else:
         images.append(("webcam.jpg", img))
 
 # ----------------------------
-# PROCESS
+# PROCESS IMAGES
 # ----------------------------
 if images:
     records = []
@@ -162,20 +142,17 @@ if images:
 
     for name, img in images:
         faces = detect_faces(img)
-        best = select_best_face(faces, img.shape)
 
-        if not best:
-            st.warning(f"⚠️ No face detected in {name}")
-            # fallback: use full image
-            face_crop = img.copy()
-        else:
-            x, y, w, h = best
+        if len(faces) == 0:
+            # Fallback: use full image as "face"
+            faces = [(0, 0, img.shape[1], img.shape[0])]
+
+        for (x, y, w, h) in faces:
             face_crop = img[y:y+h, x:x+w]
+
+            label, conf, raw = predict_skin(face_crop)
+
             cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-
-        label, conf, raw = predict_skin(face_crop)
-
-        if best:
             cv2.putText(
                 img,f"{label} {conf:.1f}%",
                 (x,y-8),
@@ -183,19 +160,19 @@ if images:
                 0.8,(0,255,0),2
             )
 
-        records.append([
-            name, label, round(conf,2),
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        ])
+            records.append([
+                name, label, round(conf,2),
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ])
 
-        st.markdown(f"""
-        <div class="pred-card">
-            <h3 class="major">🩺 Primary Detection</h3>
-            <h2 class="major">{label}</h2>
-            <p><b>Confidence:</b> {conf:.2f}%</p>
-            <p>{condition_info[label]}</p>
-        </div>
-        """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="pred-card">
+                <h3 class="major">🩺 Primary Detection</h3>
+                <h2 class="major">{label}</h2>
+                <p><b>Confidence:</b> {conf:.2f}%</p>
+                <p>{condition_info[label]}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
         save_path = os.path.join(annotated_dir, name)
         cv2.imwrite(save_path, img)
