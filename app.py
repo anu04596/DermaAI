@@ -75,14 +75,12 @@ condition_info = {
 }
 
 # ----------------------------
-# DYNAMIC HAAR FACE DETECTION
+# FACE DETECTION
 # ----------------------------
 def detect_faces(image):
     h, w = image.shape[:2]
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Dynamic minSize based on image dimensions
-    min_dim = max(30, int(min(h, w) * 0.1))  # at least 30px
+    min_dim = max(30, int(min(h, w) * 0.1))
     faces = face_cascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
@@ -144,7 +142,6 @@ if images:
         faces = detect_faces(img)
 
         if len(faces) == 0:
-            # Fallback: use full image as "face"
             faces = [(0, 0, img.shape[1], img.shape[0])]
 
         for (x, y, w, h) in faces:
@@ -165,14 +162,33 @@ if images:
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ])
 
+            # ----------------------------
+            # PRIMARY DETECTION CARD
+            # ----------------------------
             st.markdown(f"""
             <div class="pred-card">
                 <h3 class="major">🩺 Primary Detection</h3>
-                <h2 class="major">{label}</h2>
+                <h2 class="major">{label.replace('_',' ').title()}</h2>
                 <p><b>Confidence:</b> {conf:.2f}%</p>
                 <p>{condition_info[label]}</p>
             </div>
             """, unsafe_allow_html=True)
+
+            # ----------------------------
+            # CONFIDENCE BREAKDOWN
+            # ----------------------------
+            st.markdown("### 📊 Confidence Breakdown")
+
+            conf_dict = {
+                class_dict[i]: raw[i] * 100 for i in range(len(raw))
+            }
+
+            conf_dict = dict(sorted(conf_dict.items(), key=lambda x: x[1], reverse=True))
+
+            for lbl, score in conf_dict.items():
+                highlight = "🟢 " if lbl == label else ""
+                st.markdown(f"**{highlight}{lbl.replace('_',' ').title()}** — {score:.2f}%")
+                st.progress(int(score))
 
         save_path = os.path.join(annotated_dir, name)
         cv2.imwrite(save_path, img)
