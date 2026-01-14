@@ -180,7 +180,6 @@ def predict_skin(face):
 # ----------------------------
 st.markdown("<h1>DermaAI – Facial Skin Analysis Detection Platform</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center;'>AI-powered facial skin condition assessment</p>", unsafe_allow_html=True)
-st.info("⚠️ Educational use only. Not a medical diagnosis.")
 
 # ----------------------------
 # WORKFLOW CARDS - SINGLE LINE
