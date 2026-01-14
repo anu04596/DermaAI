@@ -49,45 +49,6 @@ h1, h2, h3, h4 {
 p, label, span {
     color: #6b7280 !important;
 }
-<div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin:40px 0;">
-
-  <div style="
-      background: rgba(255,255,255,0.9);
-      padding: 22px;
-      border-radius: 18px;
-      width: 220px;
-      text-align: center;
-      box-shadow: 0px 8px 22px rgba(0,0,0,0.08);
-  ">
-      <h3>🔍 AI Skin Analysis</h3>
-      <p>Deep learning–based facial skin condition detection</p>
-  </div>
-
-  <div style="
-      background: rgba(255,255,255,0.9);
-      padding: 22px;
-      border-radius: 18px;
-      width: 220px;
-      text-align: center;
-      box-shadow: 0px 8px 22px rgba(0,0,0,0.08);
-  ">
-      <h3>📊 Confidence Scores</h3>
-      <p>Clear probability breakdown for each prediction</p>
-  </div>
-
-  <div style="
-      background: rgba(255,255,255,0.9);
-      padding: 22px;
-      border-radius: 18px;
-      width: 220px;
-      text-align: center;
-      box-shadow: 0px 8px 22px rgba(0,0,0,0.08);
-  ">
-      <h3>🔐 Privacy First</h3>
-      <p>No permanent image storage, secure processing</p>
-  </div>
-
-</div>
 /* ---------- Buttons ---------- */
 .stButton > button,
 div[data-testid="stDownloadButton"] > button {
@@ -239,6 +200,47 @@ st.markdown(
 )
 
 st.info("⚠️ Educational use only. Not a medical diagnosis.")
+st.markdown("""
+<div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin:40px 0;">
+
+  <div style="
+      background: rgba(255,255,255,0.9);
+      padding: 22px;
+      border-radius: 18px;
+      width: 220px;
+      text-align: center;
+      box-shadow: 0px 8px 22px rgba(0,0,0,0.08);
+  ">
+      <h3>🔍 AI Skin Analysis</h3>
+      <p>Deep learning–based facial skin condition detection</p>
+  </div>
+
+  <div style="
+      background: rgba(255,255,255,0.9);
+      padding: 22px;
+      border-radius: 18px;
+      width: 220px;
+      text-align: center;
+      box-shadow: 0px 8px 22px rgba(0,0,0,0.08);
+  ">
+      <h3>📊 Confidence Scores</h3>
+      <p>Clear probability breakdown for each prediction</p>
+  </div>
+
+  <div style="
+      background: rgba(255,255,255,0.9);
+      padding: 22px;
+      border-radius: 18px;
+      width: 220px;
+      text-align: center;
+      box-shadow: 0px 8px 22px rgba(0,0,0,0.08);
+  ">
+      <h3>🔐 Privacy First</h3>
+      <p>No permanent image storage, secure processing</p>
+  </div>
+
+</div>
+""", unsafe_allow_html=True)
 
 # ----------------------------
 # INPUT MODE
