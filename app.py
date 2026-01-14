@@ -171,26 +171,22 @@ div[data-testid="stDataFrame"] tbody tr:hover {
     background-color: #f3f4f6 !important;
 }
 /* ===============================
-   CUSTOM UPLOAD CARD (OPTION 2)
+   CLICKABLE CUSTOM FILE UPLOADER
    =============================== */
 
-/* Hide default uploader box */
-[data-testid="stFileUploader"] {
-    opacity: 0;
-    height: 0;
-    padding: 0;
-    margin: 0;
+.upload-wrapper {
+    position: relative;
+    max-width: 600px;
+    margin: 30px auto;
 }
 
-/* Custom upload card */
+/* Visual upload card */
 .upload-card {
     background: rgba(255,255,255,0.9);
     border: 2px dashed #a6c1ee;
     border-radius: 20px;
     padding: 32px;
     text-align: center;
-    max-width: 600px;
-    margin: 30px auto;
     box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
 }
 
@@ -202,6 +198,18 @@ div[data-testid="stDataFrame"] tbody tr:hover {
     font-size: 14px;
     color: #374151 !important;
 }
+
+/* Invisible uploader overlay */
+.upload-wrapper input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
 
 </style>
 """, unsafe_allow_html=True)
