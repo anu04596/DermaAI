@@ -102,6 +102,74 @@ div[role="radiogroup"] {
 hr {
     border: 1px solid #d1d5db;
 }
+/* ===============================
+   FILE UPLOADER (UPLOAD IMAGE)
+   =============================== */
+div[data-testid="stFileUploader"] {
+    background: rgba(255,255,255,0.85);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0px 6px 18px rgba(0,0,0,0.1);
+}
+
+div[data-testid="stFileUploader"] * {
+    color: #111827 !important;
+}
+
+/* Upload button inside file uploader */
+div[data-testid="stFileUploader"] button {
+    background: linear-gradient(135deg, #fbc2eb, #a6c1ee) !important;
+    color: #111827 !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+
+
+/* ===============================
+   DOWNLOAD BUTTONS
+   =============================== */
+div[data-testid="stDownloadButton"] > button {
+    background: linear-gradient(135deg, #fbc2eb, #a6c1ee) !important;
+    color: #111827 !important;
+    border-radius: 14px !important;
+    font-weight: 600 !important;
+    padding: 10px 22px !important;
+    border: none !important;
+    box-shadow: 0px 6px 15px rgba(0,0,0,0.12);
+}
+
+
+/* ===============================
+   DATAFRAME (PREDICTION LOGS)
+   =============================== */
+div[data-testid="stDataFrame"] {
+    background: rgba(255,255,255,0.9) !important;
+    border-radius: 16px;
+    padding: 10px;
+}
+
+/* Table text */
+div[data-testid="stDataFrame"] * {
+    color: #111827 !important;
+}
+
+/* Table header */
+div[data-testid="stDataFrame"] thead tr th {
+    background-color: #e8eaf6 !important;
+    color: #111827 !important;
+    font-weight: 700 !important;
+}
+
+/* Table rows */
+div[data-testid="stDataFrame"] tbody tr {
+    background-color: #ffffff !important;
+}
+
+/* Hover effect */
+div[data-testid="stDataFrame"] tbody tr:hover {
+    background-color: #f3f4f6 !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
