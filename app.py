@@ -18,26 +18,67 @@ st.set_page_config(
 )
 
 # ----------------------------
-# DARK UI
+# PASTEL UI (CSS ONLY)
 # ----------------------------
 st.markdown("""
 <style>
-.stApp { background:#0b0b0b; color:#eaeaea; }
-h1,h2,h3,h4 { color:#ffffff; }
-.stButton>button {
-    background:linear-gradient(90deg,#16a085,#1abc9c);
-    color:white;border-radius:10px;font-weight:600;
+
+/* ---------- Background ---------- */
+.stApp {
+    background: linear-gradient(135deg, #fde2e4, #e0f4f1, #e8eaf6);
+    color: #000000;
+    font-family: 'Segoe UI', sans-serif;
 }
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4 {
+    color: #000000;
+    text-align: center;
+}
+
+/* ---------- Buttons ---------- */
+.stButton > button {
+    background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
+    color: #000000;
+    border-radius: 14px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border: none;
+    box-shadow: 0px 6px 15px rgba(0,0,0,0.12);
+}
+
+/* ---------- Radio Buttons ---------- */
+div[role="radiogroup"] {
+    justify-content: center;
+}
+
+/* ---------- Prediction Card ---------- */
 .pred-card {
-    background:#111827;
-    padding:18px;
-    border-radius:16px;
-    border-left:6px solid #22c55e;
-    margin-bottom:18px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    padding: 22px;
+    border-radius: 18px;
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
+    margin: 25px auto;
+    max-width: 650px;
+    text-align: center;
 }
-.major { color:#22c55e;font-weight:700 }
-.minor { color:#9ca3af }
-hr { border:1px solid #374151 }
+
+/* ---------- Highlight Text ---------- */
+.major {
+    color: #111827;
+    font-weight: 700;
+}
+
+.minor {
+    color: #374151;
+}
+
+/* ---------- Divider ---------- */
+hr {
+    border: 1px solid #d1d5db;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -104,9 +145,17 @@ def predict_skin(face):
 # ----------------------------
 # HEADER
 # ----------------------------
-st.title("🧬 DermaAI – Skin Analysis Platform")
-st.markdown("AI-powered facial skin condition assessment.")
-st.warning("⚠️ Educational use only. Not a medical diagnosis.")
+st.markdown(
+    "<h1>DermaAI - Facial Skin Analysis Detection Platform</h1>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<p style='text-align:center; font-size:16px;'>AI-powered facial skin condition assessment</p>",
+    unsafe_allow_html=True
+)
+
+st.info("⚠️ Educational use only. Not a medical diagnosis.")
 
 # ----------------------------
 # INPUT MODE
@@ -162,9 +211,6 @@ if images:
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ])
 
-            # ----------------------------
-            # PRIMARY DETECTION CARD
-            # ----------------------------
             st.markdown(f"""
             <div class="pred-card">
                 <h3 class="major">🩺 Primary Detection</h3>
@@ -174,9 +220,6 @@ if images:
             </div>
             """, unsafe_allow_html=True)
 
-            # ----------------------------
-            # CONFIDENCE BREAKDOWN
-            # ----------------------------
             st.markdown("### 📊 Confidence Breakdown")
 
             conf_dict = {
@@ -199,9 +242,6 @@ if images:
             use_container_width=True
         )
 
-    # ----------------------------
-    # LOGS & DOWNLOADS
-    # ----------------------------
     df = pd.DataFrame(
         records,
         columns=["image","prediction","confidence","timestamp"]
