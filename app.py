@@ -188,23 +188,24 @@ st.info("⚠️ Educational use only. Not a medical diagnosis.")
 st.markdown("""
 <div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin:40px 0;">
 
-  <div style="background:rgba(255,255,255,0.9); padding:22px; border-radius:18px; width:220px; text-align:center; box-shadow:0px 8px 22px rgba(0,0,0,0.08);">
+  <div style="background:rgba(255,255,255,0.9); padding:22px; border-radius:18px; width:220px; aspect-ratio:1/1; text-align:center; box-shadow:0px 8px 22px rgba(0,0,0,0.08); display:flex; flex-direction:column; justify-content:center; align-items:center;">
       <h3>🔍 AI Skin Analysis</h3>
       <p>Deep learning–based facial skin condition detection</p>
   </div>
 
-  <div style="background:rgba(255,255,255,0.9); padding:22px; border-radius:18px; width:220px; text-align:center; box-shadow:0px 8px 22px rgba(0,0,0,0.08);">
+  <div style="background:rgba(255,255,255,0.9); padding:22px; border-radius:18px; width:220px; aspect-ratio:1/1; text-align:center; box-shadow:0px 8px 22px rgba(0,0,0,0.08); display:flex; flex-direction:column; justify-content:center; align-items:center;">
       <h3>📊 Confidence Scores</h3>
       <p>Transparent probability breakdown for predictions</p>
   </div>
 
-  <div style="background:rgba(255,255,255,0.9); padding:22px; border-radius:18px; width:220px; text-align:center; box-shadow:0px 8px 22px rgba(0,0,0,0.08);">
+  <div style="background:rgba(255,255,255,0.9); padding:22px; border-radius:18px; width:220px; aspect-ratio:1/1; text-align:center; box-shadow:0px 8px 22px rgba(0,0,0,0.08); display:flex; flex-direction:column; justify-content:center; align-items:center;">
       <h3>🔐 Privacy First</h3>
       <p>No permanent image storage or sharing</p>
   </div>
 
 </div>
 """, unsafe_allow_html=True)
+
 
 # ----------------------------
 # INPUT MODE
