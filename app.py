@@ -17,15 +17,12 @@ st.set_page_config(
     layout="centered"
 )
 
-# ----------------------------
-# PASTEL + LIGHT THEME CSS
-# ----------------------------
 st.markdown("""
 <style>
 
-/* ---------- Force Light Theme Everywhere ---------- */
-html, body, [class*="css"] {
-    color: #111827 !important;
+/* ---------- Global Text ---------- */
+html, body {
+    color: #1f2937;
 }
 
 /* ---------- App Background ---------- */
@@ -34,47 +31,45 @@ html, body, [class*="css"] {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* ---------- Top Streamlit Header ---------- */
+/* ---------- Top Header ---------- */
 header[data-testid="stHeader"] {
     background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
 }
-
-/* ---------- Header Text ---------- */
 header[data-testid="stHeader"] * {
-    color: #111827 !important;
+    color: #1f2937 !important;
 }
 
-/* ---------- Main Headings ---------- */
+/* ---------- Headings ---------- */
 h1, h2, h3, h4 {
-    color: #111827 !important;
+    color: #1f2937 !important;
     text-align: center;
 }
 
-/* ---------- Paragraphs & Labels ---------- */
-p, label, span, div {
-    color: #111827 !important;
+/* ---------- Body Text ---------- */
+p, label, span {
+    color: #6b7280 !important;
 }
 
 /* ---------- Buttons ---------- */
-.stButton > button {
-    background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
-    color: #111827 !important;
+.stButton > button,
+div[data-testid="stDownloadButton"] > button {
+    background: linear-gradient(135deg, #fbc2eb, #a6c1ee) !important;
+    color: #1f2937 !important;
     border-radius: 14px;
     font-weight: 600;
     padding: 10px 22px;
     border: none;
-    box-shadow: 0px 6px 15px rgba(0,0,0,0.12);
+    box-shadow: 0px 6px 14px rgba(0,0,0,0.12);
 }
 
-/* ---------- Radio Buttons ---------- */
+/* ---------- Radio ---------- */
 div[role="radiogroup"] {
     justify-content: center;
 }
 
 /* ---------- Prediction Card ---------- */
 .pred-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.92);
     padding: 22px;
     border-radius: 18px;
     box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
@@ -83,136 +78,54 @@ div[role="radiogroup"] {
     text-align: center;
 }
 
-/* ---------- Highlight Text ---------- */
+/* ---------- Highlight ---------- */
 .major {
-    color: #111827 !important;
+    color: #1f2937 !important;
     font-weight: 700;
 }
 
-.minor {
-    color: #374151 !important;
-}
-
-/* ---------- Progress Bar ---------- */
+/* ---------- Progress ---------- */
 .stProgress > div > div {
     background-color: #a6c1ee;
 }
 
-/* ---------- Divider ---------- */
-hr {
-    border: 1px solid #d1d5db;
-}
-/* ===============================
-   FILE UPLOADER (UPLOAD IMAGE)
-   =============================== */
+/* ---------- FILE UPLOADER (CLEAN) ---------- */
 div[data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.85);
-    border-radius: 14px;
-    padding: 16px;
-    box-shadow: 0px 6px 18px rgba(0,0,0,0.1);
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 18px;
+    border: 1.5px dashed #c7d2fe;
+    max-width: 650px;
+    margin: 25px auto;
 }
 
 div[data-testid="stFileUploader"] * {
-    color: #111827 !important;
+    color: #6b7280 !important;
 }
 
-/* Upload button inside file uploader */
 div[data-testid="stFileUploader"] button {
     background: linear-gradient(135deg, #fbc2eb, #a6c1ee) !important;
-    color: #111827 !important;
+    color: #1f2937 !important;
     border-radius: 12px !important;
     font-weight: 600 !important;
     border: none !important;
 }
 
-
-/* ===============================
-   DOWNLOAD BUTTONS
-   =============================== */
-div[data-testid="stDownloadButton"] > button {
-    background: linear-gradient(135deg, #fbc2eb, #a6c1ee) !important;
-    color: #111827 !important;
-    border-radius: 14px !important;
-    font-weight: 600 !important;
-    padding: 10px 22px !important;
-    border: none !important;
-    box-shadow: 0px 6px 15px rgba(0,0,0,0.12);
-}
-
-
-/* ===============================
-   DATAFRAME (PREDICTION LOGS)
-   =============================== */
+/* ---------- DataFrame ---------- */
 div[data-testid="stDataFrame"] {
-    background: rgba(255,255,255,0.9) !important;
+    background: rgba(255,255,255,0.95);
     border-radius: 16px;
     padding: 10px;
 }
 
-/* Table text */
-div[data-testid="stDataFrame"] * {
-    color: #111827 !important;
-}
-
-/* Table header */
-div[data-testid="stDataFrame"] thead tr th {
+div[data-testid="stDataFrame"] thead th {
     background-color: #e8eaf6 !important;
-    color: #111827 !important;
-    font-weight: 700 !important;
+    color: #1f2937 !important;
 }
-
-/* Table rows */
-div[data-testid="stDataFrame"] tbody tr {
-    background-color: #ffffff !important;
-}
-
-/* Hover effect */
-div[data-testid="stDataFrame"] tbody tr:hover {
-    background-color: #f3f4f6 !important;
-}
-/* ===============================
-   CLICKABLE CUSTOM FILE UPLOADER
-   =============================== */
-
-.upload-wrapper {
-    position: relative;
-    max-width: 600px;
-    margin: 30px auto;
-}
-
-/* Visual upload card */
-.upload-card {
-    background: rgba(255,255,255,0.9);
-    border: 2px dashed #a6c1ee;
-    border-radius: 20px;
-    padding: 32px;
-    text-align: center;
-    box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
-}
-
-.upload-card h3 {
-    margin-bottom: 10px;
-}
-
-.upload-card p {
-    font-size: 14px;
-    color: #374151 !important;
-}
-
-/* Invisible uploader overlay */
-.upload-wrapper input[type="file"] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-}
-
 
 </style>
 """, unsafe_allow_html=True)
+
 
 # ----------------------------
 # LOAD MODEL
