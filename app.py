@@ -18,28 +18,47 @@ st.set_page_config(
 )
 
 # ----------------------------
-# PASTEL UI (CSS ONLY)
+# PASTEL + LIGHT THEME CSS
 # ----------------------------
 st.markdown("""
 <style>
 
-/* ---------- Background ---------- */
+/* ---------- Force Light Theme Everywhere ---------- */
+html, body, [class*="css"] {
+    color: #111827 !important;
+}
+
+/* ---------- App Background ---------- */
 .stApp {
     background: linear-gradient(135deg, #fde2e4, #e0f4f1, #e8eaf6);
-    color: #000000;
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* ---------- Headings ---------- */
+/* ---------- Top Streamlit Header ---------- */
+header[data-testid="stHeader"] {
+    background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
+}
+
+/* ---------- Header Text ---------- */
+header[data-testid="stHeader"] * {
+    color: #111827 !important;
+}
+
+/* ---------- Main Headings ---------- */
 h1, h2, h3, h4 {
-    color: #000000;
+    color: #111827 !important;
     text-align: center;
+}
+
+/* ---------- Paragraphs & Labels ---------- */
+p, label, span, div {
+    color: #111827 !important;
 }
 
 /* ---------- Buttons ---------- */
 .stButton > button {
     background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
-    color: #000000;
+    color: #111827 !important;
     border-radius: 14px;
     font-weight: 600;
     padding: 10px 22px;
@@ -54,7 +73,7 @@ div[role="radiogroup"] {
 
 /* ---------- Prediction Card ---------- */
 .pred-card {
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     padding: 22px;
     border-radius: 18px;
@@ -66,12 +85,17 @@ div[role="radiogroup"] {
 
 /* ---------- Highlight Text ---------- */
 .major {
-    color: #111827;
+    color: #111827 !important;
     font-weight: 700;
 }
 
 .minor {
-    color: #374151;
+    color: #374151 !important;
+}
+
+/* ---------- Progress Bar ---------- */
+.stProgress > div > div {
+    background-color: #a6c1ee;
 }
 
 /* ---------- Divider ---------- */
@@ -195,7 +219,6 @@ if images:
 
         for (x, y, w, h) in faces:
             face_crop = img[y:y+h, x:x+w]
-
             label, conf, raw = predict_skin(face_crop)
 
             cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
@@ -222,10 +245,7 @@ if images:
 
             st.markdown("### 📊 Confidence Breakdown")
 
-            conf_dict = {
-                class_dict[i]: raw[i] * 100 for i in range(len(raw))
-            }
-
+            conf_dict = {class_dict[i]: raw[i]*100 for i in range(len(raw))}
             conf_dict = dict(sorted(conf_dict.items(), key=lambda x: x[1], reverse=True))
 
             for lbl, score in conf_dict.items():
