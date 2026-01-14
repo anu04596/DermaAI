@@ -170,6 +170,38 @@ div[data-testid="stDataFrame"] tbody tr {
 div[data-testid="stDataFrame"] tbody tr:hover {
     background-color: #f3f4f6 !important;
 }
+/* ===============================
+   CUSTOM UPLOAD CARD (OPTION 2)
+   =============================== */
+
+/* Hide default uploader box */
+[data-testid="stFileUploader"] {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    margin: 0;
+}
+
+/* Custom upload card */
+.upload-card {
+    background: rgba(255,255,255,0.9);
+    border: 2px dashed #a6c1ee;
+    border-radius: 20px;
+    padding: 32px;
+    text-align: center;
+    max-width: 600px;
+    margin: 30px auto;
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
+}
+
+.upload-card h3 {
+    margin-bottom: 10px;
+}
+
+.upload-card p {
+    font-size: 14px;
+    color: #374151 !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -256,14 +288,27 @@ mode = st.radio("Select Image Source", ["Upload Image(s)", "Use Webcam"], horizo
 images = []
 
 if mode == "Upload Image(s)":
+    # Custom upload card
+    st.markdown("""
+    <div class="upload-card">
+        <h3>📷 Upload Facial Images</h3>
+        <p>Drag & drop or browse JPG, JPEG, PNG files</p>
+    </div>
+    """, unsafe_allow_html=True)
+
     files = st.file_uploader(
-        "Upload face images",
-        type=["jpg","jpeg","png"],
-        accept_multiple_files=True
+        "",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True,
+        label_visibility="collapsed"
     )
+
     if files:
         for f in files:
-            img = cv2.imdecode(np.frombuffer(f.read(), np.uint8), cv2.IMREAD_COLOR)
+            img = cv2.imdecode(
+                np.frombuffer(f.read(), np.uint8),
+                cv2.IMREAD_COLOR
+            )
             images.append((f.name, img))
 else:
     cam = st.camera_input("Capture image")
