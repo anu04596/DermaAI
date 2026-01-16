@@ -114,11 +114,13 @@ condition_info = {
 # ----------------------------
 def detect_faces(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.equalizeHist(gray)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
     raw_faces = face_cascade.detectMultiScale(
         gray,
-        scaleFactor=1.1,
-        minNeighbors=6,
-        minSize=(60, 60)
+        scaleFactor=1.05,
+        minNeighbors=3,
+        minSize=(40, 40)
     )
 
     img_area = image.shape[0] * image.shape[1]
