@@ -114,18 +114,24 @@ condition_info = {
 # ----------------------------
 def detect_faces(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    faces = face_cascade.detectMultiScale(
+    raw_faces = face_cascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
         minNeighbors=6,
         minSize=(60, 60)
     )
 
+    img_area = image.shape[0] * image.shape[1]
     valid_faces = []
-    for (x, y, w, h) in faces:
+
+    for (x, y, w, h) in raw_faces:
+        face_area = w * h
         aspect_ratio = w / h
-        if 0.75 <= aspect_ratio <= 1.33 and (w * h) > 3000:
+
+        if (
+            face_area > 0.03 * img_area and    # must be ≥3% of image
+            0.75 <= aspect_ratio <= 1.33       # realistic face shape
+        ):
             valid_faces.append((x, y, w, h))
 
     return valid_faces
