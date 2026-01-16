@@ -66,17 +66,6 @@ div[data-testid="stFileUploader"] button {
     font-weight: 600 !important;
     border: none !important;
 }
-div[data-testid="stDataFrame"] {
-    background: rgba(255,255,255,0.95);
-    border-radius: 16px;
-    padding: 10px;
-}
-div[data-testid="stDataFrame"] thead th {
-    background-color: #e8eaf6 !important;
-    color: #1f2937 !important;
-}
-
-/* ---------- Workflow Cards ---------- */
 .workflow-card {
     background: rgba(255,255,255,0.9);
     padding: 22px;
@@ -102,7 +91,9 @@ model = load_model(MODEL_PATH, compile=False)
 # ----------------------------
 # FACE DETECTOR
 # ----------------------------
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+face_cascade = cv2.CascadeClassifier(
+    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+)
 if face_cascade.empty():
     st.error("❌ Haar cascade failed to load")
     st.stop()
@@ -119,24 +110,37 @@ condition_info = {
 }
 
 # ----------------------------
-# FACE DETECTION FUNCTION
+# IMPROVED FACE DETECTION
 # ----------------------------
 def detect_faces(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 6)
-    return faces
+
+    faces = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=6,
+        minSize=(60, 60)
+    )
+
+    valid_faces = []
+    for (x, y, w, h) in faces:
+        aspect_ratio = w / h
+        if 0.75 <= aspect_ratio <= 1.33 and (w * h) > 3000:
+            valid_faces.append((x, y, w, h))
+
+    return valid_faces
 
 # ----------------------------
 # PREDICTION FUNCTION
 # ----------------------------
 def predict_skin(face):
-    face = cv2.resize(face, (224,224))
+    face = cv2.resize(face, (224, 224))
     face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
     face = preprocess_input(face)
     face = np.expand_dims(face, 0)
     preds = model.predict(face, verbose=0)[0]
     idx = np.argmax(preds)
-    return class_dict[idx], preds[idx]*100, preds
+    return class_dict[idx], preds[idx] * 100
 
 # ----------------------------
 # HEADER
@@ -148,21 +152,21 @@ st.markdown("<p style='text-align:center;'>AI-powered facial skin condition asse
 # WORKFLOW CARDS
 # ----------------------------
 st.markdown("""
-<div style="display:flex; justify-content:space-around; gap:24px; flex-wrap:nowrap; width:100%; margin:40px 0;">
+<div style="display:flex; justify-content:space-around; gap:24px; flex-wrap:nowrap; margin:40px 0;">
   <div class="workflow-card">
       <h2>1️⃣</h2>
       <h4>Upload Image</h4>
-      <p>Upload your facial image(s) or use webcam</p>
+      <p>Upload your facial image(s)</p>
   </div>
   <div class="workflow-card">
       <h2>2️⃣</h2>
       <h4>AI Analysis</h4>
-      <p>Deep learning model detects skin conditions</p>
+      <p>Deep learning skin analysis</p>
   </div>
   <div class="workflow-card">
       <h2>3️⃣</h2>
       <h4>View Results</h4>
-      <p>Get confidence scores and skin condition insights</p>
+      <p>Confidence-based results</p>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -196,46 +200,50 @@ if images:
 
     for name, img in images:
         faces = detect_faces(img)
+
         if len(faces) == 0:
-            faces = [(0,0,img.shape[1],img.shape[0])]  # fallback to full image
+            st.warning(f"❌ No human face detected in `{name}`. Prediction skipped.")
+            st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), use_container_width=True)
+            continue
 
-        for (x,y,w,h) in faces:
+        for (x, y, w, h) in faces:
             face_crop = img[y:y+h, x:x+w]
-            label, conf, raw = predict_skin(face_crop)
+            label, conf = predict_skin(face_crop)
 
-            records.append([name, label, round(conf,2), datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+            records.append([
+                name, label, round(conf, 2),
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ])
 
-            # PRIMARY DETECTION CARD
             st.markdown(f"""
             <div class="pred-card">
-                <h3 class="major">🩺 Primary Detection</h3>
+                <h3 class="major">🩺 Detection Result</h3>
                 <h2 class="major">{label.replace('_',' ').title()}</h2>
                 <p><b>Confidence:</b> {conf:.2f}%</p>
                 <p>{condition_info[label]}</p>
             </div>
             """, unsafe_allow_html=True)
 
-        # Annotate image
-        for (x,y,w,h) in faces:
-            cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-            cv2.putText(img,f"{label} {conf:.1f}%",(x,y-8),cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,0),2)
+            cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
+            cv2.putText(img, f"{label} {conf:.1f}%", (x, y-8),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
 
         save_path = os.path.join("annotated_faces", name)
         cv2.imwrite(save_path, img)
-        st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption=f"Annotated Output: {name}", use_container_width=True)
+        st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB),
+                 caption=f"Annotated Output: {name}",
+                 use_container_width=True)
 
-    # LOGS & DOWNLOADS
-    df = pd.DataFrame(records, columns=["image","prediction","confidence","timestamp"])
-    st.subheader("📊 Prediction Logs")
-    st.dataframe(df, use_container_width=True)
+    if records:
+        df = pd.DataFrame(records, columns=["image","prediction","confidence","timestamp"])
+        st.subheader("📊 Prediction Logs")
+        st.dataframe(df, use_container_width=True)
 
-    csv_path = "prediction_logs.csv"
-    df.to_csv(csv_path, index=False)
+        df.to_csv("prediction_logs.csv", index=False)
 
-    zip_path = "annotated_images.zip"
-    with zipfile.ZipFile(zip_path, "w") as zipf:
-        for f in os.listdir("annotated_faces"):
-            zipf.write(os.path.join("annotated_faces", f), arcname=f)
+        with zipfile.ZipFile("annotated_images.zip", "w") as zipf:
+            for f in os.listdir("annotated_faces"):
+                zipf.write(os.path.join("annotated_faces", f), arcname=f)
 
-    st.download_button("📄 Download Logs CSV", open(csv_path,"rb"), "prediction_logs.csv")
-    st.download_button("🖼 Download Annotated Images", open(zip_path,"rb"), "annotated_images.zip")
+        st.download_button("📄 Download Logs CSV", open("prediction_logs.csv","rb"))
+        st.download_button("🖼 Download Annotated Images", open("annotated_images.zip","rb"))
